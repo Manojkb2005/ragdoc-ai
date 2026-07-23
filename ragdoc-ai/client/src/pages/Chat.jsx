@@ -108,23 +108,44 @@ function Chat() {
       const formData = new FormData();
       formData.append("pdf", file);
 
-      await api.post("/upload", formData, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await api.post("/upload", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         onUploadProgress: (progressEvent) => {
           const percent = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
+
           setUploadProgress(percent);
         },
       });
 
-      await loadDocuments();
+      // Add newly uploaded PDF immediately
+      const uploadedDocument = res.data.document;
+
+      setDocuments((prev) => [...prev, uploadedDocument]);
+
+      // Automatically switch to new PDF
+      setSelectedDocument(uploadedDocument);
+
+      // Save selected PDF
+      localStorage.setItem("selectedPDF", uploadedDocument._id);
+
+      // Start a fresh chat
+      setMessages([]);
+      setQuestion("");
 
       setUploadProgress(100);
 
       setTimeout(() => {
         setUploadProgress(0);
       }, 1000);
+
+      // Reset file input so the same PDF can be uploaded again later
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     } catch (err) {
       console.log(err);
       alert(err.response?.data?.message || "Upload Failed");
