@@ -14,7 +14,8 @@ const uploadPDF = async (req, res) => {
     }
 
     console.log("📄 Uploaded File:", req.file.originalname);
-
+    console.log("Starting pdf-parse...");
+    console.log("PDF parsed successfully.");
     // Extract text directly from memory
     const pdfData = await pdfParse(req.file.buffer);
 
