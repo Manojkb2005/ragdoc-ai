@@ -6,19 +6,44 @@ function App() {
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
-        fontFamily: "Arial",
+        backgroundColor: "#000",
+        color: "#fff",
+        fontFamily: "Arial, sans-serif",
         textAlign: "center",
         padding: "20px",
       }}
     >
       <div>
-        <h1>🚧 Under Maintenance</h1>
-        <p>
-          currently fixing the PDF upload feature.
+        <h1
+          style={{
+            fontSize: "3rem",
+            marginBottom: "20px",
+          }}
+        >
+          🚧 Under Maintenance
+        </h1>
+
+        <p
+          style={{
+            fontSize: "1.3rem",
+            lineHeight: "1.8",
+            color: "#ffffff",
+          }}
+        >
+          I'm currently fixing the <strong>PDF upload</strong> feature.
           <br />
-          The app will be back online soon.
+          The application will be back online soon.
         </p>
-        <p>Thank you for your patience! 😊</p>
+
+        <p
+          style={{
+            marginTop: "25px",
+            fontSize: "1rem",
+            color: "#d1d5db",
+          }}
+        >
+          Thank you for your patience! 😊
+        </p>
       </div>
     </div>
   );
