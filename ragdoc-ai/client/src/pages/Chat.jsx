@@ -12,6 +12,9 @@ function Chat() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Controls the mobile sidebar drawer (hidden by default on small screens)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const fileRef = useRef();
   const messagesEndRef = useRef();
 
@@ -181,23 +184,59 @@ function Chat() {
     }
   };
 
+  const selectDocument = (doc) => {
+    setSelectedDocument(doc);
+    localStorage.setItem("selectedPDF", doc._id);
+    setMessages([]);
+    setSidebarOpen(false); // auto-close drawer on mobile after picking a doc
+  };
+
   return (
     <MainLayout>
-      <div className="flex flex-col lg:flex-row h-[85vh]">
+      <div className="relative flex h-[100dvh] lg:h-[85vh] overflow-hidden">
+        {/* ================= Mobile overlay (behind drawer) ================= */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          />
+        )}
+
         {/* ================= Sidebar ================= */}
-        <div className="w-full lg:w-72 bg-slate-900 border-r border-slate-700 p-5">
-          {/* Logo */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-blue-400">
-              📚 RAGDoc AI
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">Chat with your PDFs</p>
+        <div
+          className={`fixed lg:static top-0 left-0 z-30 h-full w-72 max-w-[85vw]
+            bg-slate-900 border-r border-slate-700 p-5 flex flex-col
+            transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            lg:translate-x-0`}
+        >
+          {/* Logo + mobile close button */}
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-blue-400">
+                📚 RAGDoc AI
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                Chat with your PDFs
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-gray-400 hover:text-white text-2xl leading-none p-1"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
           </div>
 
           {/* New Chat */}
           <button
-            onClick={() => setMessages([])}
-            className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg text-white font-semibold transition"
+            onClick={() => {
+              setMessages([]);
+              setSidebarOpen(false);
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 py-3 rounded-lg text-white font-semibold transition"
           >
             + New Chat
           </button>
@@ -229,7 +268,7 @@ function Chat() {
           )}
 
           {/* PDF List */}
-          <div className="space-y-3 max-h-[55vh] overflow-y-auto">
+          <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
             {documents.map((doc) => (
               <div
                 key={doc._id}
@@ -240,12 +279,8 @@ function Chat() {
                 }`}
               >
                 <div
-                  className="flex-1"
-                  onClick={() => {
-                    setSelectedDocument(doc);
-                    localStorage.setItem("selectedPDF", doc._id);
-                    setMessages([]);
-                  }}
+                  className="flex-1 min-w-0"
+                  onClick={() => selectDocument(doc)}
                 >
                   <p className="text-white truncate">
                     📄 {doc.originalName}
@@ -254,7 +289,8 @@ function Chat() {
 
                 <button
                   onClick={() => deletePDF(doc._id)}
-                  className="ml-3 text-red-400 hover:text-red-600 text-lg transition"
+                  className="ml-3 text-red-400 hover:text-red-600 text-lg transition p-1"
+                  aria-label="Delete PDF"
                 >
                   🗑️
                 </button>
@@ -264,27 +300,38 @@ function Chat() {
         </div>
 
         {/* ================= Chat Area ================= */}
-        <div className="flex-1 flex flex-col">
-          <div className="border-b border-slate-700 p-5 bg-slate-900">
-            <h1 className="text-2xl font-bold text-white">
-              {selectedDocument
-                ? `📄 ${selectedDocument.originalName}`
-                : "🤖 RAGDoc AI"}
-            </h1>
-            <p className="text-gray-400 mt-1">
-              Ask questions about the selected document
-            </p>
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="border-b border-slate-700 p-4 sm:p-5 bg-slate-900 flex items-center gap-3">
+            {/* Hamburger, mobile only */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden text-2xl text-gray-300 hover:text-white p-1 shrink-0"
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-white truncate">
+                {selectedDocument
+                  ? `📄 ${selectedDocument.originalName}`
+                  : "🤖 RAGDoc AI"}
+              </h1>
+              <p className="text-gray-400 mt-1 text-xs sm:text-sm hidden sm:block">
+                Ask questions about the selected document
+              </p>
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8">
             {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="text-7xl mb-6">🤖</div>
-                <h2 className="text-4xl font-bold text-white mb-3">
+              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                <div className="text-6xl sm:text-7xl mb-6">🤖</div>
+                <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3">
                   Welcome to RAGDoc AI
                 </h2>
-                <p className="text-gray-400 max-w-xl">
+                <p className="text-gray-400 max-w-xl text-sm sm:text-base">
                   Upload a PDF, select it from the sidebar, and start asking
                   questions. Your AI assistant will answer using only the
                   contents of your selected document.
@@ -295,12 +342,12 @@ function Chat() {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`mb-6 flex ${
+                className={`mb-4 sm:mb-6 flex ${
                   msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
-                  className={`max-w-3xl rounded-2xl px-5 py-4 shadow-lg ${
+                  className={`max-w-[85%] sm:max-w-3xl rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-lg ${
                     msg.role === "user"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-800 text-white border border-slate-700"
@@ -309,7 +356,7 @@ function Chat() {
                   <div className="text-sm font-semibold mb-2">
                     {msg.role === "user" ? "You" : "RAGDoc AI"}
                   </div>
-                  <div className="whitespace-pre-wrap leading-7">
+                  <div className="whitespace-pre-wrap leading-6 sm:leading-7 text-sm sm:text-base">
                     {msg.text}
                   </div>
                 </div>
@@ -318,9 +365,11 @@ function Chat() {
 
             {loading && (
               <div className="flex justify-start mb-6">
-                <div className="bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4">
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3 sm:px-6 sm:py-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-300">Thinking</span>
+                    <span className="text-gray-300 text-sm sm:text-base">
+                      Thinking
+                    </span>
                     <div className="flex gap-1">
                       <div className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"></div>
                       <div
@@ -341,12 +390,13 @@ function Chat() {
           </div>
 
           {/* ================= INPUT ================= */}
-          <div className="border-t border-slate-700 bg-slate-900 p-5">
-            <div className="flex items-center gap-3 bg-slate-800 rounded-full px-5 py-3">
+          <div className="border-t border-slate-700 bg-slate-900 p-3 sm:p-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-5">
+            <div className="flex items-center gap-2 sm:gap-3 bg-slate-800 rounded-full px-3 py-2 sm:px-5 sm:py-3">
               <button
                 onClick={() => fileRef.current.click()}
-                className="text-2xl hover:scale-110 transition"
+                className="text-xl sm:text-2xl hover:scale-110 transition shrink-0 p-1"
                 disabled={uploading}
+                aria-label="Upload PDF"
               >
                 📎
               </button>
@@ -360,11 +410,11 @@ function Chat() {
               />
 
               <input
-                className="flex-1 bg-transparent outline-none text-white placeholder:text-gray-400"
+                className="flex-1 min-w-0 bg-transparent outline-none text-white placeholder:text-gray-400 text-sm sm:text-base"
                 placeholder={
                   uploading
                     ? "Uploading PDF..."
-                    : "Ask anything about this document..."
+                    : "Ask anything..."
                 }
                 value={question}
                 disabled={loading || uploading}
@@ -379,10 +429,10 @@ function Chat() {
               <button
                 onClick={askAI}
                 disabled={loading || uploading}
-                className={`px-6 py-2 rounded-full font-semibold transition ${
+                className={`shrink-0 px-4 py-2 sm:px-6 sm:py-2 rounded-full font-semibold transition text-sm sm:text-base ${
                   loading || uploading
                     ? "bg-slate-600 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
+                    : "bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
                 } text-white`}
               >
                 {loading ? "..." : uploading ? "..." : "Send"}
