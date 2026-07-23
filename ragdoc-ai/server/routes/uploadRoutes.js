@@ -1,60 +1,28 @@
-const express=require("express");
-const multer=require("multer");
+const express = require("express");
+const multer = require("multer");
 
-const protect=require("../middleware/authMiddleware");
+const protect = require("../middleware/authMiddleware");
+const { uploadPDF } = require("../controllers/uploadController");
 
-const {uploadPDF}=require("../controllers/uploadController");
+const router = express.Router();
 
-const router=express.Router();
+// Store PDF in memory instead of disk
+const storage = multer.memoryStorage();
 
-const storage=multer.diskStorage({
-
-destination:function(req,file,cb){
-
-cb(null,"uploads/");
-
-},
-
-filename:function(req,file,cb){
-
-cb(null,Date.now()+"-"+file.originalname);
-
-}
-
+const upload = multer({
+  storage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files allowed"));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
 });
 
-const upload=multer({
+router.post("/", protect, upload.single("pdf"), uploadPDF);
 
-storage,
-
-fileFilter:function(req,file,cb){
-
-if(file.mimetype==="application/pdf"){
-
-cb(null,true);
-
-}
-
-else{
-
-cb(new Error("Only PDF files allowed"));
-
-}
-
-}
-
-});
-
-router.post(
-
-"/",
-
-protect,
-
-upload.single("pdf"),
-
-uploadPDF
-
-);
-
-module.exports=router;
+module.exports = router;

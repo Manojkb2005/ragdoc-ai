@@ -1,4 +1,3 @@
-const fs = require("fs");
 const pdfParse = require("pdf-parse");
 
 const Document = require("../models/Document");
@@ -6,37 +5,43 @@ const chunkText = require("../utils/textChunker");
 
 const uploadPDF = async (req, res) => {
   try {
-    // Check if a file was uploaded
+    // Check if file exists
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No PDF Uploaded",
+        message: "No PDF uploaded.",
       });
     }
 
-    // Read uploaded PDF
-    const pdfBuffer = fs.readFileSync(req.file.path);
+    console.log("📄 Uploaded File:", req.file.originalname);
 
-    // Extract text from PDF
-    const pdfData = await pdfParse(pdfBuffer);
+    // Extract text directly from memory
+    const pdfData = await pdfParse(req.file.buffer);
 
-    // Split text into chunks
+    // Check if PDF contains text
+    if (!pdfData.text || pdfData.text.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "This PDF does not contain readable text.",
+      });
+    }
+
+    // Split into chunks
     const chunks = chunkText(pdfData.text);
 
-    // Save document in MongoDB
+    // Save document
     const document = await Document.create({
       user: req.user.id,
       originalName: req.file.originalname,
-      filename: req.file.filename,
-      filePath: req.file.path,
+      filename: req.file.originalname,
+      filePath: "memory",
       extractedText: pdfData.text,
-      chunks: chunks,
+      chunks,
     });
 
-    // Success response
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "PDF Uploaded Successfully",
+      message: "PDF uploaded successfully.",
       pages: pdfData.numpages,
       characters: pdfData.text.length,
       totalChunks: chunks.length,
@@ -44,11 +49,13 @@ const uploadPDF = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Upload Error:", error);
+    console.error("========== UPLOAD ERROR ==========");
+    console.error(error);
+    console.error(error.stack);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Internal Server Error",
     });
   }
 };
